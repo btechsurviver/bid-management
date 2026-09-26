@@ -14,9 +14,9 @@ def check_java_engine():
 
 def load_auction_in_engine(auction_data):
     """
-    Send auction data to the Java engine so it knows about this auction.
+    Send auction data and existing bids to the Java engine so it knows about this auction.
     This is called whenever an auction is created or when the Flask app starts
-    (to sync existing auctions from the database).
+    (to sync existing auctions and reconstruct PriorityQueue from SQLite database).
     
     The Java engine uses this data to validate bids using its PriorityQueue.
     """
@@ -29,7 +29,8 @@ def load_auction_in_engine(auction_data):
             "minimumIncrement": auction_data["minimum_increment"],
             "currentHighestBid": auction_data.get("current_highest_bid", 0),
             "startTime": auction_data["start_time_ms"],
-            "endTime": auction_data["end_time_ms"]
+            "endTime": auction_data["end_time_ms"],
+            "bids": auction_data.get("bids", [])
         }
         resp = requests.post(
             f"{JAVA_ENGINE_URL}/load-auction",
@@ -40,6 +41,45 @@ def load_auction_in_engine(auction_data):
         return resp.json()
     except requests.ConnectionError:
         return {"success": False, "message": "Java engine is not running"}
+
+def sync_single_auction_to_java(auction_id):
+    """
+    Fetch auction metadata and all existing accepted bids from SQLite,
+    and synchronize them to the Java engine to reconstruct its PriorityQueue.
+    """
+    from database.db import get_connection
+    from routes.auction_routes import datetime_to_millis
+    conn = get_connection()
+    row = conn.execute("SELECT * FROM auctions WHERE id = ?", (auction_id,)).fetchone()
+    if not row:
+        conn.close()
+        return {"success": False, "message": "Auction not found in DB"}
+
+    bid_rows = conn.execute(
+        "SELECT id, bidder_name, amount, created_at FROM bids WHERE auction_id = ? ORDER BY id ASC",
+        (auction_id,)
+    ).fetchall()
+    conn.close()
+
+    bids = [{
+        "id": b["id"],
+        "bidderName": b["bidder_name"],
+        "amount": b["amount"],
+        "timestamp": datetime_to_millis(b["created_at"])
+    } for b in bid_rows]
+
+    engine_data = {
+        "id": row["id"],
+        "title": row["title"],
+        "description": row["description"],
+        "starting_price": row["starting_price"],
+        "minimum_increment": row["minimum_increment"],
+        "current_highest_bid": row["current_highest_bid"],
+        "start_time_ms": datetime_to_millis(row["start_time"]),
+        "end_time_ms": datetime_to_millis(row["end_time"]),
+        "bids": bids
+    }
+    return load_auction_in_engine(engine_data)
 
 def place_bid_in_engine(auction_id, bidder_name, amount):
     """

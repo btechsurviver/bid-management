@@ -96,6 +96,8 @@ In an un-synchronized auction system:
 
 The presentation tier sends HTTP JSON requests to Flask (port 5000). Flask validates schemas, syncs state with SQLite, and forwards auction state mutations to the Java Auction Engine (port 9090). Java serializes critical section access using `ReentrantLock` and updates its internal `BidPriorityQueue`.
 
+On Java engine startup/recovery, existing SQLite auction and bid data is synchronized into the Java auction engine so the PriorityQueue can be reconstructed.
+
 ---
 
 ### 9. Data Structures Implementation
@@ -118,6 +120,7 @@ The presentation tier sends HTTP JSON requests to Flask (port 5000). Flask valid
 3. **Concurrency Simulation Module:** Spawns 3–20 concurrent bidder threads to test lock serialization.
 4. **Priority Queue Visualizer Module:** Renders the internal heap order in real time.
 5. **Database Persistence Module:** Stores relational auction and bid records in SQLite.
+6. **Recovery & Reconstruction Module:** Synchronizes SQLite bid history to reconstruct in-memory PriorityQueue states upon engine restart.
 
 ---
 
@@ -141,6 +144,7 @@ The presentation tier sends HTTP JSON requests to Flask (port 5000). Flask valid
 - Core Java Engine compiled using `javac engine/*.java` and started via `java engine.Main`.
 - Embedded HTTP server uses thread pool `Executors.newFixedThreadPool(10)`.
 - Python Flask backend registered under `/api` blueprint.
+- On Java engine startup/recovery, existing SQLite auction and bid data is synchronized into the Java auction engine so the PriorityQueue can be reconstructed.
 
 ---
 

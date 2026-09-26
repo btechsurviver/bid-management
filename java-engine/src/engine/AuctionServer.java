@@ -108,12 +108,23 @@ public class AuctionServer {
 
                 Auction auction = new Auction(id, title, description, startingPrice,
                         minimumIncrement, startTime, endTime);
-                auction.setCurrentHighestBid(currentHighestBid);
+
+                // Reconstruct PriorityQueue from restored bids
+                List<Bid> existingBids = parseBidsArray(body, id);
+                for (Bid b : existingBids) {
+                    auction.getBidQueue().addBid(b);
+                }
+
+                if (auction.getBidQueue().getHighestBid() != null) {
+                    auction.setCurrentHighestBid(auction.getBidQueue().getHighestBid().getAmount());
+                } else {
+                    auction.setCurrentHighestBid(currentHighestBid);
+                }
 
                 manager.loadAuction(auction);
 
                 sendResponse(exchange, 200,
-                    "{\"success\":true,\"message\":\"Auction loaded in engine\"}");
+                    "{\"success\":true,\"message\":\"Auction loaded in engine (" + existingBids.size() + " bids restored)\"}");
             } catch (Exception e) {
                 sendResponse(exchange, 400,
                     "{\"success\":false,\"message\":\"Invalid auction data: " + escapeJson(e.getMessage()) + "\"}");
@@ -341,13 +352,34 @@ public class AuctionServer {
 
     // Simple JSON parsing helpers
 
+    private int findKeyIndex(String json, String key) {
+        String search = "\"" + key + "\"";
+        int idx = 0;
+        while ((idx = json.indexOf(search, idx)) != -1) {
+            if (idx == 0 || json.charAt(idx - 1) == '{' || json.charAt(idx - 1) == ',' || json.charAt(idx - 1) == ' ' || json.charAt(idx - 1) == '\t' || json.charAt(idx - 1) == '\n') {
+                int afterQuote = idx + search.length();
+                while (afterQuote < json.length() && (json.charAt(afterQuote) == ' ' || json.charAt(afterQuote) == '\t' || json.charAt(afterQuote) == '\n')) {
+                    afterQuote++;
+                }
+                if (afterQuote < json.length() && json.charAt(afterQuote) == ':') {
+                    return idx;
+                }
+            }
+            idx += search.length();
+        }
+        return -1;
+    }
+
     private String getStringValue(String json, String key) {
-        String search = "\"" + key + "\":\"";
-        int start = json.indexOf(search);
-        if (start == -1) return "";
-        start += search.length();
-        int end = json.indexOf("\"", start);
-        return json.substring(start, end);
+        int keyIdx = findKeyIndex(json, key);
+        if (keyIdx == -1) return "";
+        int colonIdx = json.indexOf(":", keyIdx + key.length() + 2);
+        if (colonIdx == -1) return "";
+        int startQuote = json.indexOf("\"", colonIdx + 1);
+        if (startQuote == -1) return "";
+        int endQuote = json.indexOf("\"", startQuote + 1);
+        if (endQuote == -1) return "";
+        return json.substring(startQuote + 1, endQuote);
     }
 
     private int getIntValue(String json, String key) {
@@ -359,10 +391,14 @@ public class AuctionServer {
     }
 
     private double getDoubleValue(String json, String key) {
-        String search = "\"" + key + "\":";
-        int start = json.indexOf(search);
-        if (start == -1) throw new RuntimeException("Missing field: " + key);
-        start += search.length();
+        int keyIdx = findKeyIndex(json, key);
+        if (keyIdx == -1) throw new RuntimeException("Missing field: " + key);
+        int colonIdx = json.indexOf(":", keyIdx + key.length() + 2);
+        if (colonIdx == -1) throw new RuntimeException("Missing colon for field: " + key);
+        int start = colonIdx + 1;
+        while (start < json.length() && (Character.isWhitespace(json.charAt(start)) || json.charAt(start) == '"')) {
+            start++;
+        }
         int end = start;
         while (end < json.length() && (Character.isDigit(json.charAt(end)) || json.charAt(end) == '.' || json.charAt(end) == '-')) {
             end++;
@@ -433,5 +469,65 @@ public class AuctionServer {
         }
 
         return bidders;
+    }
+
+    /**
+     * Parse the "bids" array from the JSON body.
+     * Expected format: "bids":[{"id":1,"bidderName":"Alice","amount":10000.0,"timestamp":1700000000000},...]
+     */
+    private List<Bid> parseBidsArray(String json, int defaultAuctionId) {
+        List<Bid> bids = new ArrayList<>();
+        int keyIdx = json.indexOf("\"bids\"");
+        if (keyIdx == -1) return bids;
+
+        int arrStart = json.indexOf("[", keyIdx);
+        if (arrStart == -1) return bids;
+
+        int depth = 0;
+        int arrEnd = -1;
+        for (int i = arrStart; i < json.length(); i++) {
+            char c = json.charAt(i);
+            if (c == '[') depth++;
+            else if (c == ']') {
+                depth--;
+                if (depth == 0) {
+                    arrEnd = i;
+                    break;
+                }
+            }
+        }
+        if (arrEnd == -1) return bids;
+
+        String arrContent = json.substring(arrStart + 1, arrEnd).trim();
+        if (arrContent.isEmpty()) return bids;
+
+        int objDepth = 0;
+        int objStart = -1;
+        for (int i = 0; i < arrContent.length(); i++) {
+            char c = arrContent.charAt(i);
+            if (c == '{') {
+                if (objDepth == 0) objStart = i;
+                objDepth++;
+            } else if (c == '}') {
+                objDepth--;
+                if (objDepth == 0 && objStart >= 0) {
+                    String obj = arrContent.substring(objStart, i + 1);
+                    try {
+                        int bidId = getIntValue(obj, "id");
+                        String bidderName = getStringValue(obj, "bidderName");
+                        double amount = getDoubleValue(obj, "amount");
+                        long timestamp = getLongValue(obj, "timestamp");
+                        if (!bidderName.isEmpty() && amount > 0) {
+                            bids.add(new Bid(bidId, defaultAuctionId, bidderName, amount, timestamp));
+                        }
+                    } catch (Exception e) {
+                        System.err.println("Skipping malformed bid entry: " + obj);
+                    }
+                    objStart = -1;
+                }
+            }
+        }
+
+        return bids;
     }
 }

@@ -3,7 +3,7 @@ from database.db import get_connection
 from services.java_bridge import (
     load_auction_in_engine, place_bid_in_engine,
     get_auction_status_from_engine, check_java_engine,
-    simulate_concurrent_bids
+    simulate_concurrent_bids, sync_single_auction_to_java
 )
 from datetime import datetime
 import logging
@@ -380,25 +380,29 @@ def seed_demo():
         seeded = seed_demo_data(force=True)
         # Sync all auctions to Java engine
         conn = get_connection()
-        rows = conn.execute("SELECT * FROM auctions").fetchall()
+        rows = conn.execute("SELECT id FROM auctions").fetchall()
         conn.close()
 
         for row in rows:
-            engine_data = {
-                "id": row["id"],
-                "title": row["title"],
-                "description": row["description"],
-                "starting_price": row["starting_price"],
-                "minimum_increment": row["minimum_increment"],
-                "current_highest_bid": row["current_highest_bid"],
-                "start_time_ms": datetime_to_millis(row["start_time"]),
-                "end_time_ms": datetime_to_millis(row["end_time"])
-            }
-            load_auction_in_engine(engine_data)
+            sync_single_auction_to_java(row["id"])
 
         return jsonify({"success": True, "message": "Demo data seeded and synced to Java engine."})
     except Exception as e:
         logger.error(f"seed_demo error: {e}")
+        return jsonify({"success": False, "message": str(e)}), 500
+
+
+# ============================================
+# POST /api/auctions/<id>/sync — Sync single auction to Java
+# ============================================
+@auction_bp.route('/auctions/<int:auction_id>/sync', methods=['POST'])
+def sync_auction_endpoint(auction_id):
+    """Re-synchronize an auction and its bids from SQLite to Java memory."""
+    try:
+        result = sync_single_auction_to_java(auction_id)
+        return jsonify(result)
+    except Exception as e:
+        logger.error(f"sync_auction_endpoint error: {e}")
         return jsonify({"success": False, "message": str(e)}), 500
 
 
@@ -424,19 +428,9 @@ def start_auction(auction_id):
         now_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         conn.execute("UPDATE auctions SET start_time = ? WHERE id = ?", (now_str, auction_id))
         conn.commit()
-
-        engine_data = {
-            "id": auction_id,
-            "title": auction["title"],
-            "description": auction["description"],
-            "starting_price": auction["starting_price"],
-            "minimum_increment": auction["minimum_increment"],
-            "current_highest_bid": auction["current_highest_bid"],
-            "start_time_ms": datetime_to_millis(now_str),
-            "end_time_ms": datetime_to_millis(auction["end_time"])
-        }
-        load_auction_in_engine(engine_data)
         conn.close()
+
+        sync_single_auction_to_java(auction_id)
         return jsonify({"message": "Auction started", "start_time": now_str})
     except Exception as e:
         logger.error(f"start_auction error: {e}")
@@ -458,19 +452,9 @@ def end_auction(auction_id):
         now_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         conn.execute("UPDATE auctions SET end_time = ? WHERE id = ?", (now_str, auction_id))
         conn.commit()
-
-        engine_data = {
-            "id": auction_id,
-            "title": auction["title"],
-            "description": auction["description"],
-            "starting_price": auction["starting_price"],
-            "minimum_increment": auction["minimum_increment"],
-            "current_highest_bid": auction["current_highest_bid"],
-            "start_time_ms": datetime_to_millis(auction["start_time"]),
-            "end_time_ms": datetime_to_millis(now_str)
-        }
-        load_auction_in_engine(engine_data)
         conn.close()
+
+        sync_single_auction_to_java(auction_id)
         return jsonify({"message": "Auction ended", "end_time": now_str})
     except Exception as e:
         logger.error(f"end_auction error: {e}")

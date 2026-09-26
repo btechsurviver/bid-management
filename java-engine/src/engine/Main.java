@@ -55,27 +55,27 @@ public class Main {
 
         BidPriorityQueue pq = new BidPriorityQueue();
 
-        System.out.println("Adding bids: 10000, 12000, 11000, 15000, 13000");
-        pq.addBid(new Bid(1, "Ashish", 10000));
-        pq.addBid(new Bid(1, "Rahul", 12000));
-        pq.addBid(new Bid(1, "Priya", 11000));
-        pq.addBid(new Bid(1, "Aman", 15000));
-        pq.addBid(new Bid(1, "Sneha", 13000));
+        System.out.println("Adding bids: ₹10,000, ₹15,000, ₹12,000, ₹18,000, ₹11,000");
+        pq.addBid(new Bid(1, "Bidder-1", 10000));
+        pq.addBid(new Bid(1, "Bidder-2", 15000));
+        pq.addBid(new Bid(1, "Bidder-3", 12000));
+        pq.addBid(new Bid(1, "Bidder-4", 18000));
+        pq.addBid(new Bid(1, "Bidder-5", 11000));
 
         Bid highest = pq.getHighestBid();
-        System.out.println("\nHighest bid (from peek()): " + highest.getAmount()
+        System.out.println("\nHighest bid (from peek()): ₹" + highest.getAmount()
                          + " by " + highest.getBidderName());
-        System.out.println("Expected: 15000.0 by Aman");
+        System.out.println("Expected: ₹18000.0 by Bidder-4");
 
         System.out.println("\nAll bids sorted (highest first):");
         for (Bid b : pq.getAllBidsSorted()) {
-            System.out.println("  " + b.getBidderName() + " \u2014 \u20B9" + b.getAmount());
+            System.out.println("  " + b.getBidderName() + " — ₹" + b.getAmount());
         }
 
-        if (highest.getAmount() == 15000.0) {
+        if (highest.getAmount() == 18000.0) {
             System.out.println("\n[PASS] PriorityQueue is working correctly!");
         } else {
-            System.out.println("\n[FAIL] Expected 15000 but got " + highest.getAmount());
+            System.out.println("\n[FAIL] Expected 18000 but got " + highest.getAmount());
         }
     }
 

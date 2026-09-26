@@ -10,13 +10,15 @@ CORS(app)
 # Register the auction routes blueprint under /api
 app.register_blueprint(auction_bp, url_prefix='/api')
 
+from services.java_bridge import load_auction_in_engine, check_java_engine, sync_single_auction_to_java
+
 def sync_auctions_to_java():
     """
-    On Flask startup, load all existing auctions from SQLite into
-    the Java engine so it can validate bids correctly.
+    On Flask startup, load all existing auctions and their bid history from SQLite into
+    the Java engine so its BidPriorityQueue can be reconstructed.
     
     This ensures that even if the Java engine is restarted, the auction
-    data is reconstructed from the database.
+    data and PriorityQueue state are fully reconstructed from the database.
     """
     if not check_java_engine():
         print("WARNING: Java engine is offline. Auctions will not be synced.")
@@ -24,24 +26,14 @@ def sync_auctions_to_java():
         return
 
     conn = get_connection()
-    rows = conn.execute("SELECT * FROM auctions").fetchall()
+    rows = conn.execute("SELECT id, title FROM auctions").fetchall()
     conn.close()
 
     for row in rows:
-        engine_data = {
-            "id": row["id"],
-            "title": row["title"],
-            "description": row["description"],
-            "starting_price": row["starting_price"],
-            "minimum_increment": row["minimum_increment"],
-            "current_highest_bid": row["current_highest_bid"],
-            "start_time_ms": datetime_to_millis(row["start_time"]),
-            "end_time_ms": datetime_to_millis(row["end_time"])
-        }
-        result = load_auction_in_engine(engine_data)
+        result = sync_single_auction_to_java(row["id"])
         print(f"  Synced auction #{row['id']}: {row['title']} -> {result}")
 
-    print(f"Synced {len(rows)} auction(s) to Java engine.")
+    print(f"Synced {len(rows)} auction(s) and their PriorityQueue states to Java engine.")
 
 
 if __name__ == '__main__':
