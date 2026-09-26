@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Online Auction System</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <header>
+        <div class="container header-container">
+            <a href="index.html" class="site-title">University Auctions</a>
+            <nav>
+                <a href="index.html" class="active">Auctions</a>
+                <a href="admin.html">Admin</a>
+                <a href="demo.html">Demo</a>
+                <a href="about.html">About</a>
+            </nav>
+        </div>
+    </header>
+
+    <main class="container">
+        <section class="status-banner">
+            <span id="api-status" class="badge">Checking system status...</span>
+        </section>
+
+        <h2>Current Auctions</h2>
+
+        <div id="auction-list" class="auction-grid">
+            <p>Loading auctions...</p>
+        </div>
+    </main>
+
+    <footer>
+        <div class="container">
+            <p>&copy; 2026 Data Structures and OS Project</p>
+        </div>
+    </footer>
+
+    <script src="js/api.js"></script>
+    <script src="js/app.js"></script>
+</body>
+</html>

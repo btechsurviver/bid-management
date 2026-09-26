@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>About Project — Online Auction Bid Management System</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <header>
+        <div class="container header-container">
+            <a href="index.html" class="site-title">University Auctions</a>
+            <nav>
+                <a href="index.html">Auctions</a>
+                <a href="admin.html">Admin</a>
+                <a href="demo.html">Demo</a>
+                <a href="about.html" class="active">About</a>
+            </nav>
+        </div>
+    </header>
+
+    <main class="container">
+        <h2>About Project</h2>
+
+        <div class="about-card">
+            <div class="about-section">
+                <h3>Project Title</h3>
+                <p><strong>Online Auction Bid Management System</strong></p>
+                <p class="text-muted">A multi-tier web application built to demonstrate core Data Structures and Operating System concepts in a practical auction software domain.</p>
+            </div>
+
+            <div class="info-grid" style="margin: 1.5rem 0;">
+                <div class="info-item">
+                    <span class="info-label">Data Structure</span>
+                    <span class="info-value" style="color: var(--accent-color);">Priority Queue</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">Operating System Concept</span>
+                    <span class="info-value" style="color: var(--success-color);">Concurrency Control</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">Implementation</span>
+                    <span class="info-value" style="color: var(--primary-color);">Java Multithreading</span>
+                </div>
+            </div>
+
+            <div class="about-section">
+                <h3>Technology Stack</h3>
+                <ul class="about-tech-list">
+                    <li><strong>Frontend:</strong> HTML5, Vanilla CSS, JavaScript (ES6 fetch API)</li>
+                    <li><strong>Backend API:</strong> Python Flask REST API</li>
+                    <li><strong>Auction Engine:</strong> Java (Multithreaded execution, PriorityQueue, ReentrantLock)</li>
+                    <li><strong>Database:</strong> SQLite (Persistent storage for auctions and bids)</li>
+                </ul>
+            </div>
+
+            <div class="about-section" style="margin-top: 1.5rem;">
+                <h3>System Architecture & Concept Highlights</h3>
+                <div class="about-highlight-box">
+                    <h4>1. Priority Queue Data Structure</h4>
+                    <p>
+                        Each auction maintains its bids inside Java's <code>PriorityQueue&lt;Bid&gt;</code> (a binary min/max heap).
+                        The comparator orders bids by descending amount (and ascending timestamp for equal amounts).
+                        This provides <code>O(1)</code> time complexity for retrieving the current winning bid via <code>peek()</code>
+                        and <code>O(log n)</code> for bid insertion via <code>add()</code>.
+                    </p>
+                </div>
+
+                <div class="about-highlight-box" style="margin-top: 1rem;">
+                    <h4>2. Concurrency Control & Synchronization</h4>
+                    <p>
+                        To handle concurrent bids from multiple user threads, the Java engine enforces mutual exclusion in the critical section using <code>ReentrantLock</code> in <code>AuctionManager.java</code>.
+                        When multiple bidder threads attempt to place bids simultaneously, only one thread executes the check-validate-insert routine at a time.
+                        This prevents race conditions and guarantees that bid increment rules remain mathematically valid under high concurrency.
+                    </p>
+                </div>
+            </div>
+
+            <div class="about-section" style="margin-top: 1.5rem;">
+                <h3>Main Features</h3>
+                <ul class="about-feature-list">
+                    <li>Auction management (creation, activation, termination)</li>
+                    <li>Bid submission and automatic minimum increment validation</li>
+                    <li>Java PriorityQueue for real-time highest bid retrieval</li>
+                    <li>Multiple bidder threads for concurrent bidding simulation</li>
+                    <li>ReentrantLock concurrency control preventing race conditions</li>
+                    <li>Persistent SQLite database storage</li>
+                    <li>Clean, fully responsive user interface for mobile, tablet, and desktop</li>
+                </ul>
+            </div>
+        </div>
+    </main>
+
+    <footer>
+        <div class="container">
+            <p>&copy; 2026 Online Auction Bid Management System | B.Tech Project</p>
+        </div>
+    </footer>
+</body>
+</html>

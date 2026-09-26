@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin — Create Auction</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <header>
+        <div class="container header-container">
+            <a href="index.html" class="site-title">University Auctions</a>
+            <nav>
+                <a href="index.html">Auctions</a>
+                <a href="admin.html" class="active">Admin</a>
+                <a href="demo.html">Demo</a>
+                <a href="about.html">About</a>
+            </nav>
+        </div>
+    </header>
+
+    <main class="container">
+        <h2>Create Auction</h2>
+
+        <div id="form-message"></div>
+
+        <form id="create-auction-form" class="auction-form">
+            <div class="form-group">
+                <label for="item-title">Item Name</label>
+                <input type="text" class="form-input" id="item-title" placeholder="e.g. MacBook Air M2" required>
+            </div>
+
+            <div class="form-group">
+                <label for="item-desc">Description</label>
+                <textarea class="form-input" id="item-desc" rows="3" placeholder="Describe the item..." required></textarea>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="starting-price">Starting Price (₹)</label>
+                    <input type="number" class="form-input" id="starting-price" min="1" step="1" placeholder="e.g. 10000" required>
+                </div>
+                <div class="form-group">
+                    <label for="min-increment">Minimum Increment (₹)</label>
+                    <input type="number" class="form-input" id="min-increment" min="1" step="1" placeholder="e.g. 500" required>
+                </div>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="start-time">Start Time</label>
+                    <input type="datetime-local" class="form-input" id="start-time" required>
+                </div>
+                <div class="form-group">
+                    <label for="end-time">End Time</label>
+                    <input type="datetime-local" class="form-input" id="end-time" required>
+                </div>
+            </div>
+
+            <button type="submit" class="btn" id="submit-btn">Create Auction</button>
+        </form>
+
+        <hr class="section-divider">
+
+        <h2>Manage Auctions</h2>
+        <div id="admin-auction-list">
+            <p>Loading auctions...</p>
+        </div>
+    </main>
+
+    <footer>
+        <div class="container">
+            <p>&copy; 2026 Data Structures and OS Project</p>
+        </div>
+    </footer>
+
+    <script src="js/api.js"></script>
+    <script src="js/admin.js"></script>
+</body>
+</html>
